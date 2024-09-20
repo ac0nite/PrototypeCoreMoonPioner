@@ -1,4 +1,5 @@
 using Common.StateMachine;
+using Core.Input;
 using UnityEngine;
 using Zenject;
 
@@ -6,19 +7,21 @@ namespace Application.StateMachine.States
 {
     public class GameplayState : IState
     {
-        public GameplayState()
+        private readonly IInputHandler _inputHandler;
+
+        public GameplayState(IInputHandler inputHandler)
         {
-            Debug.Log("GameplayState");
+            _inputHandler = inputHandler;
         }
 
         public void OnEnter()
         {
-            Debug.Log("Enter GameplayState");
+            _inputHandler.Lock = false;
         }
 
         public void OnExit()
         {
-            Debug.Log("Exit GameplayState");
+            _inputHandler.Lock = true;
         }
         
         #region FACTORY

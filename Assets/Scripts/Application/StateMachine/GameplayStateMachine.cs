@@ -8,6 +8,9 @@ namespace Application.StateMachine
     public class GameplayStateMachine : BaseStateMachine, IInitializable, IDisposable
     {
         private readonly SignalBus _signals;
+        private readonly InitialiseGameplayState.Factory _initialiseStateFactory;
+        private readonly GameplayState.Factory _gameplayStateFactory;
+        private readonly ResetGameplayState.Factory _resetGameplayStateFactory;
 
         public GameplayStateMachine(
             SignalBus signals,
@@ -16,16 +19,18 @@ namespace Application.StateMachine
             ResetGameplayState.Factory resetGameplayStateFactory)
         {
             _signals = signals;
-
-            Register(initialiseStateFactory.Create()).GoesTo(typeof(GameplayState));
-            Register(gameplayStateFactory.Create()).GoesTo(typeof(ResetGameplayState));
-            Register(resetGameplayStateFactory.Create()).GoesTo(typeof(GameplayState));
-
+            _initialiseStateFactory = initialiseStateFactory;
+            _gameplayStateFactory = gameplayStateFactory;
+            _resetGameplayStateFactory = resetGameplayStateFactory;
             _signals.Subscribe<Signals.NextState>(NextStateChangeHandler);
         }
         
         public void Initialize()
         {
+            Register(_initialiseStateFactory.Create()).GoesTo(typeof(GameplayState));
+            Register(_gameplayStateFactory.Create()).GoesTo(typeof(ResetGameplayState));
+            Register(_resetGameplayStateFactory.Create()).GoesTo(typeof(GameplayState));
+            
             Run(typeof(InitialiseGameplayState));
         }
 
