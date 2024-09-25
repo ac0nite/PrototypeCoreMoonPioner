@@ -1,24 +1,53 @@
 using System;
 using Gameplay.Locations;
+using Gameplay.Warehouses;
 using UnityEngine;
 using Zenject;
 
 namespace Gameplay.Buildings
 {
-    public class Building
+    public class Building : IDisposable
     {
         private readonly BuildingView _view;
+        private readonly InfoBoard _infoBoard;
+        
+        private IManufacture _manufacture;
+        private IManufactureWarehouse _warehouse;
 
-        public Building(BuildingView.Factory viewFactory)
+        public Building(
+            BuildingView.Factory viewFactory,
+            InfoBoard.Factory infoBoardFactory,
+            [Inject (Id = Constants.Constants.ID.GeneralCamera)] Camera generalCamera
+            )
         {
             _view = viewFactory.Create();
+            _view.SetRenderCamera(generalCamera);
+            _infoBoard = infoBoardFactory.Create(_view.InfoBoardPoint);
+        }
+
+        private void Initialise(Settings buildSettings, Manufacture.Settings manufactureSettings)
+        {
+            buildSettings.Point.ApplyTo(_view.transform);
+            
+            //TODO предполагается инициализация внешнего вида в зависимости от типа здания
+            _view.Type = buildSettings.Type;
+            
+            _warehouse = new ManufactureWarehouse(manufactureSettings.Warehouse);
+            _manufacture = new Manufacture(manufactureSettings.ProductionRequirement, _warehouse);
+            
+            _infoBoard.Initialize(_warehouse);
+            
+            _manufacture.Run();
         }
         
-        private void SetPoint(Settings point)
+        public void Dispose()
         {
-            _view.transform.position = point.Point.Position;
-            _view.transform.rotation = Quaternion.Euler(point.Point.Rotation); 
-            _view.Type = point.Type;
+            _infoBoard.Dispose();
+        }
+        
+        private void Enabled(bool enabled)
+        {
+            _view.gameObject.SetActive(enabled);
         }
 
         #region Settings
@@ -34,24 +63,23 @@ namespace Gameplay.Buildings
         
         #region Pool
 
-        public class Pool : MemoryPool<Settings, Building>
+        public class Pool : MemoryPool<Settings, Manufacture.Settings, Building>
         {
             protected override void OnCreated(Building item)
             {
-                base.OnCreated(item);
-                item._view.gameObject.SetActive(false);
+                item.Enabled(false);
             }
 
-            protected override void OnSpawned(Building item)
+            protected override void Reinitialize(Settings buildSettings, Manufacture.Settings manufactureSettings,Building item)
             {
-                base.OnSpawned(item);
-                item._view.gameObject.SetActive(true);
+                item.Initialise(buildSettings, manufactureSettings);
+                item.Enabled(true);
             }
 
-            protected override void Reinitialize(Settings point, Building item)
+            protected override void OnDespawned(Building item)
             {
-                base.Reinitialize(point, item);
-                item.SetPoint(point);
+                item.Dispose();
+                item.Enabled(false);
             }
         }
 

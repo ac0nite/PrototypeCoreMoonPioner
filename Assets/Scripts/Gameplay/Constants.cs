@@ -7,5 +7,10 @@ namespace Gameplay.Constants
             public const string GameplayCanvas = nameof(GameplayCanvas);  
             public const string GeneralCamera = nameof(GeneralCamera);   
         }
+
+        public static class Renderer
+        {
+            public const string ResourceColorName = "_Color";
+        }
     }
 }

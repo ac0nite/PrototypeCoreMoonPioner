@@ -2,6 +2,7 @@ using System.IO;
 using System.Linq;
 using Gameplay.Buildings;
 using Gameplay.Characters;
+using Gameplay.Warehouses;
 using UnityEngine;
 using Zenject;
 
@@ -13,6 +14,7 @@ namespace Gameplay.Locations
         private readonly Building.Pool _buildingPool;
         private readonly Camera _generalCamera;
         private readonly ILocationModelSetter _locationModel;
+        private readonly Manufacture.Settings _manufactureSettings;
 
         private readonly string[] _locationsConfig = CreatorLocation.GetLocationNames();
 
@@ -21,12 +23,16 @@ namespace Gameplay.Locations
             Character.Pool characterPool,
             Building.Pool buildingPool,
             [Inject (Id = Constants.Constants.ID.GeneralCamera)] Camera generalCamera,
-            ILocationModelSetter locationModel)
+            ILocationModelSetter locationModel,
+            Manufacture.Settings manufactureSettings)
         {
             _characterPool = characterPool;
             _buildingPool = buildingPool;
             _generalCamera = generalCamera;
             _locationModel = locationModel;
+            
+            //TODO производство пока с одинаковыми настройками
+            _manufactureSettings = manufactureSettings;
         }
 
         public void Load(int locationNumber)
@@ -35,8 +41,12 @@ namespace Gameplay.Locations
             var settings = JsonUtility.FromJson<LocationSettings>(File.ReadAllText(locations));
             
             _locationModel.Character = _characterPool.Spawn(settings.Character);
-            _locationModel.Buildings = settings.Buildings.Select(s => _buildingPool.Spawn(s)).ToList();
-            _locationModel.MovementBoundRadius = new LocationModel.BoundRadius{Value = settings.MovementBboundsRadius, Double = settings.MovementBboundsRadius * 2};
+            _locationModel.Buildings = settings.Buildings.Select(s => _buildingPool.Spawn(s, _manufactureSettings)).ToList();
+            _locationModel.MovementBoundRadius = new LocationModel.BoundRadius
+            {
+                Value = settings.MovementBboundsRadius, 
+                Double = settings.MovementBboundsRadius * settings.MovementBboundsRadius
+            };
 
             settings.Camera.ApplyTo(_generalCamera.transform);
         }

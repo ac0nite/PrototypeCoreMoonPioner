@@ -15,3 +15,23 @@ MonoBehaviour:
   _gameplayResources:
     JoystickPrefab: {fileID: -8915677764916556048, guid: 9b46cf26cb93f43b7b519845ebafb12a, type: 3}
     CharacterPrefab: {fileID: 305902333555575969, guid: 37488110415cd4a1799a678a1b6e08e6, type: 3}
+    BuildingPrefab: {fileID: 8926150814014122393, guid: 3281912095e164cf9b7931a847ae67a0, type: 3}
+    ResourcePrefab: {fileID: 911616295177691326, guid: 9486ba6ea8eae4fb092f7f60324bc154, type: 3}
+    InfoBoardPrefab: {fileID: 8176120136437365882, guid: 47a872bd5cb6a42339971c6c41852640, type: 3}
+  _characterSettings:
+    MovementSettings:
+      Speed: 4
+      Deceleration: 6
+    RotationSettings:
+      Speed: 4
+  _manufactureSettings:
+    ProductionRequirement:
+      InputResources: []
+      OutputResource:
+        _resourceType: 0
+        _amount: 1
+      ProductionTime: 5
+    Warehouse:
+      InputCapacity: 0
+      OutputCapacity: 10
+  _resourceSettings: {fileID: 0}

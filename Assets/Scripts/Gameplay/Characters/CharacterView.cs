@@ -13,9 +13,17 @@ namespace Gameplay.Characters
         public event Action<Collider> OnTriggerEnterEvent;
         public event Action<Collider> OnTriggerExitEvent;
 
-        private void OnTriggerEnter(Collider other) => OnTriggerEnterEvent?.Invoke(other);
+        private void OnTriggerEnter(Collider other)
+        {
+            Debug.Log($"OnTriggerEnter: {other.gameObject.name}");
+            OnTriggerEnterEvent?.Invoke(other);
+        }
 
-        private void OnTriggerExit(Collider other) => OnTriggerExitEvent?.Invoke(other);
+        private void OnTriggerExit(Collider other)
+        {
+            Debug.Log($"OnTriggerExit: {other.gameObject.name}");
+            OnTriggerExitEvent?.Invoke(other);
+        }
 
         private void Update()
         {

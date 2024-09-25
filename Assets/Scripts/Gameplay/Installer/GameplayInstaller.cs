@@ -1,7 +1,10 @@
 using Core;
 using Gameplay.Buildings;
 using Gameplay.Characters;
+using Gameplay.Constants;
 using Gameplay.Locations;
+using Gameplay.Warehouses;
+using UnityEngine;
 using Zenject;
 
 public class GameplayInstaller : MonoInstaller
@@ -31,5 +34,19 @@ public class GameplayInstaller : MonoInstaller
         
         Container.BindMemoryPool<Building, Building.Pool>()
             .WithInitialSize(3);
+
+        Container.BindFactory<ResourceItemView, ResourceItemView.Factory>()
+            .FromComponentInNewPrefab(_gameplayResources.ResourcePrefab)
+            .WhenInjectedInto<ResourceItem>();
+        
+        Container.BindMemoryPool<ResourceItem, ResourceItem.Pool>()
+            .WithInitialSize(5);
+        
+        Container.BindFactory<InfoBoardView, InfoBoardView.Factory>()
+            .FromComponentInNewPrefab(_gameplayResources.InfoBoardPrefab)
+            .WhenInjectedInto<InfoBoard>();
+
+        Container.BindFactory<Transform, InfoBoard, InfoBoard.Factory>()
+            .WhenInjectedInto<Building>();
     }
 }
