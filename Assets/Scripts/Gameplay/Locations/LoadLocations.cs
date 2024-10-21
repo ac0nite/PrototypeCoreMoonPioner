@@ -24,12 +24,16 @@ namespace Gameplay.Locations
             Building.Pool buildingPool,
             [Inject (Id = Constants.Constants.ID.GeneralCamera)] Camera generalCamera,
             ILocationModelSetter locationModel,
-            Manufacture.Settings manufactureSettings)
+            Manufacture.Settings manufactureSettings,
+            GameplaySettingsInstaller.GameplayResources gameplayResources
+            )
         {
             _characterPool = characterPool;
             _buildingPool = buildingPool;
             _generalCamera = generalCamera;
             _locationModel = locationModel;
+            
+            _locationModel.ResourceItemSize = gameplayResources.ResourcePrefab.ViewSize;
             
             //TODO производство пока с одинаковыми настройками
             _manufactureSettings = manufactureSettings;

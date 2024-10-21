@@ -1,5 +1,6 @@
 using System;
-using UnityEngine;
+using System.Collections.Generic;
+using Gameplay.Constants;
 
 namespace Gameplay.Warehouses
 {
@@ -7,34 +8,43 @@ namespace Gameplay.Warehouses
     {
         ResourceType ResourceType { get; }
         int Amount { get; }
+        IReadOnlyCollection<ResourceItem> Collections { get; }
+        void Add(params ResourceItem[] items);
+        ResourceItem Remove();
     }
     
-    [Serializable]
     public class Resource : IResource
     {
-        [SerializeField] private ResourceType _resourceType;
-        [SerializeField] private int _amount;
-        public ResourceType ResourceType => _resourceType;
-        public int Amount => _amount;
-
-        public Resource(ResourceType resourceType, int amount)
-        {
-            _resourceType = resourceType;
-            _amount = amount;
-        }
-        
+        private readonly Stack<ResourceItem> _items = new();
+        public ResourceType ResourceType { get; }
+        public int Amount => _items.Count;
         public Resource(ResourceType resourceType)
         {
-            _resourceType = resourceType;
-            _amount = 1;
+            ResourceType = resourceType;
         }
         
-        [Serializable]
-        public struct ProductionRequirement
+        public Resource(ResourceType resourceType, params ResourceItem[] items)
         {
-            public Resource[] InputResources;
-            public Resource OutputResource;
-            public int ProductionTime;
+            ResourceType = resourceType;
+            Add(items);
         }
+
+        public void Add(params ResourceItem[] items)
+        {
+            foreach (var item in items)
+            {
+                _items.Push(item);
+            }
+        }
+
+        public ResourceItem Remove()
+        {
+            if (_items.TryPop(out var item))
+                return item;
+
+            throw new InvalidOperationException("No items left.");
+        }
+
+        public IReadOnlyCollection<ResourceItem> Collections => _items;
     }
 }

@@ -1,4 +1,7 @@
 using System;
+using Core.PlacementsStorage;
+using Cysharp.Threading.Tasks;
+using DG.Tweening;
 using UnityEngine;
 using Zenject;
 
@@ -8,9 +11,22 @@ namespace Gameplay.Constants
     {
         private ColorRenderer _colorRenderer;
 
-        private void Start()
+        private void OnValidate()
+        {
+            ViewSize = GetComponent<Renderer>()?.bounds.size ?? Vector3.zero;
+        }
+
+        private void Awake()
         {
             _colorRenderer = new ColorRenderer(GetComponent<Renderer>());
+        }
+
+        public Vector3 ViewSize { get; private set; }
+
+        public Color ViewColor
+        {
+            get => _colorRenderer.Color;
+            set => _colorRenderer.Color = value;
         }
         
         public void SetColor(Color color)
@@ -61,15 +77,18 @@ namespace Gameplay.Constants
     {
         private readonly ResourceItemView _view;
 
-        public ResourceItem(ResourceItemView.Factory viewFactory)
+        public ResourceItem(ResourceItemView.Factory viewFactory, ResourceItemSettings resourceItemSettings)
         {
             _view = viewFactory.Create();
+            Animation = new ResourceItemAnimation(_view, resourceItemSettings.AnimationSettings);
         }
         
         private void Initialise(Settings settings)
         {
-            _view.SetColor(settings.Color);
+            _view.ViewColor = settings.Color;
         }
+
+        public ResourceItemAnimation Animation { get; }
 
         private void Enable(bool enabled)
         {
@@ -107,6 +126,114 @@ namespace Gameplay.Constants
                 base.OnDespawned(item);
                 item.Enable(false);
             }
+        }
+
+        #endregion
+    }
+    
+
+    public class ResourceItemAnimation
+    {
+        private readonly ResourceItemView _view;
+        private readonly Settings _settings;
+        private readonly Transform _transform;
+
+        public ResourceItemAnimation(ResourceItemView view, Settings settings)
+        {
+            _view = view;
+            _settings = settings;
+            _transform = _view.transform;
+        }
+
+        public void PlayAnimationManufacture(Transform from, Transform to, Color toColor, float duration, Action callback = null)
+        {
+            DOTween.Sequence()
+                .Append(CreateMovementTween(from, to, duration * _settings.MoveRatio))
+                .Append(CreateManufacturingSequence(toColor, duration * (1f - _settings.MoveRatio)))
+                .OnComplete(() => callback?.Invoke());
+        }
+        
+        public void PlayAnimationManufacture(Transform to, Color toColor, float duration, Action callback = null)
+        {
+            _view.transform.position = to.position;
+            _view.transform.rotation = to.rotation;
+            
+            CreateManufacturingSequence(toColor, duration).OnComplete(() => callback?.Invoke());
+        }
+
+        public UniTask PlayMoveTask(Placement.Point target)
+        {
+            return DOTween.Sequence()
+                .Append(_transform.DOMove(target.Position, _settings.MoveDuration))
+                .Join(_transform.DORotateQuaternion(target.Parent.rotation, _settings.MoveDuration))
+                .AsyncWaitForCompletion()
+                .AsUniTask();
+        }
+
+        public UniTask PlayJumpTask(Placement.Point target)
+        {
+            return DOTween.Sequence()
+                .Append(_transform.DOJump(target.Position, _settings.JumpPower, _settings.NumJumps,_settings.MoveDuration))
+                .Join(_transform.DORotateQuaternion(target.Parent.rotation, _settings.MoveDuration))
+                .AsyncWaitForCompletion()
+                .AsUniTask();
+        }
+
+        public UniTask PlayAnimationMovementTask(Transform from, Transform to, bool setToParent = false)
+        {
+            return CreateMovementTween(from, to, _settings.MoveDuration).OnComplete(() =>
+            {
+                if (setToParent) _view.transform.SetParent(to, true);
+            })
+                .AsyncWaitForCompletion()
+                .AsUniTask();
+        }
+        private Sequence CreateMovementTween(Transform from, Transform to, float duration)
+        {
+            var transform = _view.transform;
+            return DOTween.Sequence()
+                .Append(transform.DOJump(to.position, _settings.JumpPower, _settings.NumJumps, duration).OnStart(() => transform.position = from.position))
+                .Join(transform.DORotateQuaternion(to.rotation, duration).OnStart(() => transform.rotation = from.rotation));
+
+            //TODO: реализовать анимацию если персонаж в движении
+        }
+
+        private Sequence CreateJumpTween(Vector3 toPosition, float duration)
+        {
+            return _transform.DOJump(toPosition, _settings.JumpPower, _settings.NumJumps, duration);
+        }
+
+        private Tween CreateRotationTween(Quaternion toRotation, float duration)
+        {
+            return _transform.DORotateQuaternion(toRotation, duration);
+        }
+
+        private Tween CreateColorTween(Color toColor, float duration)
+        {
+            return DOVirtual.Color(_view.ViewColor, toColor, duration, value => _view.SetColor(value));
+        }
+        
+        private Tween CreateShakeScaleTween(float duration)
+        {
+            return _transform.DOShakeScale(duration);
+        }
+
+        private Sequence CreateManufacturingSequence(Color toColor, float duration)
+        {
+            return DOTween.Sequence()
+                .Append(CreateColorTween(toColor, duration))
+                .Join(CreateShakeScaleTween(duration));
+        }
+
+        #region Settings
+
+        [Serializable]
+        public struct Settings
+        {
+            [Range(0, 1)] public float MoveRatio;
+            public float MoveDuration;
+            public float JumpPower;
+            public int NumJumps;
         }
 
         #endregion

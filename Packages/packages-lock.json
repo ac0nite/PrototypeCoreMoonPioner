@@ -1,5 +1,25 @@
 {
   "dependencies": {
+    "com.actioncode.attributes": {
+      "version": "https://github.com/HyagoOliveira/Attributes.git",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "194a1e59d1d894c7b5693409f4a4ac9eb7fb1324"
+    },
+    "com.cysharp.unitask": {
+      "version": "https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "f7b3c2fbe1628518a12340576e779fd80837480e"
+    },
+    "com.unity.2d.sprite": {
+      "version": "1.0.0",
+      "depth": 0,
+      "source": "builtin",
+      "dependencies": {}
+    },
     "com.unity.collab-proxy": {
       "version": "2.5.1",
       "depth": 0,

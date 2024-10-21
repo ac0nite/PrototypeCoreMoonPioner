@@ -3,64 +3,45 @@ using System.Collections.Generic;
 using System.Linq;
 using Common;
 using Cysharp.Threading.Tasks;
+using Gameplay.Buildings;
 using UnityEngine;
-using UnityEngine.Serialization;
-using Zenject;
 
 namespace Gameplay.Warehouses
 {
-    public interface IWarehouseObserver
-    {
-        void OnWarehouseUpdate(Resource resource, Transform from, Transform to);
-    }
-    
-    
-    
-    /*
-       private delegate void FromPlayerToWarehouseDelegate(Resources resource, Character character, Building building);
-       private delegate void FromInputWarehouseToManufactureDelegate(Resources resource, Building building);
-       private delegate void FromManufactureToWarehouseDelegate(Resources resource, Building building);
-       private delegate void FromWarehouseToCharacterDelegate(Resources resource, Building building, Character character);
-     */
-
     public interface IManufactureWarehouse
     {
         IWarehouse Input { get; }
         IWarehouse Output { get; }
-        bool CanResourceProduce(params IResource[] resources);
+        IWarehouse Progress { get; }
+        bool IsUnusedInput();
+        bool CanResourceProduce(Manufacture.ResourceSettings[] requirement);
     }
     public class ManufactureWarehouse : IManufactureWarehouse
     {
         public IWarehouse Input { get; }
         public IWarehouse Output { get; }
+        public IWarehouse Progress { get; }
         
-        private readonly IResource _verificationResource = new Resource(ResourceType.Resource1);
-        public ManufactureWarehouse(Settings settings)
+        public ManufactureWarehouse(IEnumerable<Storage> inputStorages, IEnumerable<Storage> outputStorages, IEnumerable<Storage> progressStorages)
         {
-            Input = new Warehouse(settings.InputCapacity);
-            Output = new Warehouse(settings.OutputCapacity);
+            Input = new Warehouse(inputStorages);
+            Output = new Warehouse(outputStorages);
+            Progress = new Warehouse(progressStorages);
         }
         
-        public bool CanResourceProduce(params IResource[] resources)
+        public bool CanResourceProduce(Manufacture.ResourceSettings[] requirement)
         {
-            var b0 = IsUnusedInput();
-            var b1 = CanInputResources(resources);
-            var b2 = IsFullOutput();
-            
-            return (IsUnusedInput() || CanInputResources(resources)) && !IsFullOutput();
+            return (IsUnusedInput() || CanInputResources(requirement)) && !IsFullOutput();
         }
 
-        private bool IsUnusedInput() => Input.StoredResources.Count == 0 && !Input.CanAddResource(_verificationResource);
+        public bool IsUnusedInput() => Input.IsUnUsed;
 
-        private bool CanInputResources(IResource[] resources)
+        private bool CanInputResources(Manufacture.ResourceSettings[] requirement)
         {
-            return resources.All(r => Input.StoredResources.ContainsKey(r.ResourceType) && Input.StoredResources[r.ResourceType] >= r.Amount);
+            return requirement.All(r => Input.Contains(r.ResourceType, r.Amount));
         }
 
-        private bool IsFullOutput()
-        {
-            return !Output.CanAddResource(_verificationResource);
-        }
+        private bool IsFullOutput() => Output.IsFull;
         
         [Serializable]
         public struct Settings
@@ -74,32 +55,39 @@ namespace Gameplay.Warehouses
     {
         void Run();
         void Stop();
+        void Dispose();
+        public event Action<bool> ProgressChangedEvent; 
     }
     public class Manufacture : IManufacture, IDisposable
     {
-        private readonly Resource.ProductionRequirement _requirement;
+        private readonly Settings _settings;
         private readonly IManufactureWarehouse _warehouse;
+        private readonly IResourceSpawner _resourceItemSpawner;
         private readonly CustomTimer _timer;
-        private readonly IResource[] _requirementResource;
+        private readonly ResourceType _outputResourceType;
 
-        public Manufacture(Resource.ProductionRequirement requirement, IManufactureWarehouse warehouse)
+        public event Action<bool> ProgressChangedEvent;
+
+        public Manufacture(Settings settings, IManufactureWarehouse warehouse, IResourceSpawner resourceItemSpawner)
         {
-            _requirement = requirement;
+            _settings = settings;
             _warehouse = warehouse;
+            _resourceItemSpawner = resourceItemSpawner;
 
-            _requirementResource = _requirement.InputResources.Select(r => (IResource)r).ToArray();
-            _timer = new CustomTimer(_requirement.ProductionTime);
+            // _outputResourceType = settings.Output.ResourceType;
+            _timer = new CustomTimer(settings.ProductionTime);
             
-            _warehouse.Input.ResourceAddedEvent += ResourceAddedHandler;
+            // _warehouse.Input.ResourceAddedEvent += ResourceAddedHandler;
         }
 
         public void Run()
         {
-            var е0 = _warehouse.CanResourceProduce(_requirementResource);
-            if (_warehouse.CanResourceProduce(_requirementResource))
+            if (_warehouse.CanResourceProduce(_settings.Input))
             {
                 UseForProduce();
-                _timer.StartAsync(ProduceAndTryToRunProduction).Forget();
+                Produce();
+                ProgressChangedEvent?.Invoke(true);
+                _timer.StartAsync(ReleaseAndTryToRunProduction).Forget();
             } 
         }
 
@@ -107,95 +95,61 @@ namespace Gameplay.Warehouses
         {
             _timer.Stop();
         }
-        
+
         private void ResourceAddedHandler(IResource _) => Run();
 
-        private void ProduceAndTryToRunProduction()
+        private void ReleaseAndTryToRunProduction()
         {
-            Produce();
+            Release();
+            ProgressChangedEvent?.Invoke(false);
             Run();
         }
 
         private void UseForProduce()
         {
-            foreach (var resource in _requirementResource)
-                _warehouse.Input.RemoveResource(resource.ResourceType, resource.Amount);
+            foreach (var resource in _settings.Input)
+            {
+                var input = _warehouse.Input.GetStorage(resource.ResourceType).RemoveResource(resource.Amount);
+               _resourceItemSpawner.DeSpawn(input.Collections.ToArray());
+            }
         }
 
         private void Produce()
         {
-            _warehouse.Output.AddResource(_requirement.OutputResource);
+            var item = _resourceItemSpawner.Spawn(_outputResourceType);
+            _warehouse.Progress.GetStorage(_outputResourceType).AddResource(new Resource(_outputResourceType, new []{item}));
+            var point = _warehouse.Progress.GetStorage(_outputResourceType).GeеFreePointPlacement();
+            item.Animation.PlayJumpTask(point).Forget();
+        }
+
+        private void Release()
+        {
+            TransferResources
+                .TransferTo(_warehouse.Progress, _outputResourceType, 1, _warehouse.Output)
+                .Forget();
         }
         
         public void Dispose()
         {
             _timer?.Dispose();
-            _warehouse.Input.ResourceAddedEvent -= ResourceAddedHandler;
+            // _warehouse.Input.ResourceAddedEvent -= ResourceAddedHandler;
         }
 
         [Serializable]
         public struct Settings
         {
-            public Resource.ProductionRequirement ProductionRequirement;
+            public ResourceSettings[] Input;
+            public ResourceSettings[] Output;
+            public int ProductionTime;
+
             public ManufactureWarehouse.Settings Warehouse;
         }
-    }
-
-    public interface IWarehouse
-    {
-        event Action<IResource> ResourceAddedEvent;
-        event Action<IResource> ResourceRemovedEvent;
         
-        IReadOnlyDictionary<ResourceType, int> StoredResources { get; }
-        bool CanAddResource(IResource resource);
-        IResource RemoveResource(ResourceType resourceType, int amount);
-        void AddResource(IResource resource);
-    }
-    public class Warehouse : IWarehouse
-    {
-        private Dictionary<ResourceType, int> _storedResources = new();
-        private readonly int _capacity;
-        
-        public event Action<IResource> ResourceAddedEvent;
-        public event Action<IResource> ResourceRemovedEvent;
-
-        public Warehouse(int capacity)
+        [Serializable]
+        public struct ResourceSettings
         {
-            _capacity = capacity;
+            public ResourceType ResourceType;
+            public int Amount;
         }
-        
-        public IReadOnlyDictionary<ResourceType, int> StoredResources => _storedResources;
-
-        public bool CanAddResource(IResource resource)
-        {
-            return CurrentCapacity + resource.Amount <= _capacity;
-        }
-
-        public void AddResource(IResource resource)
-        {
-            if (CanAddResource(resource))
-            {
-                if(_storedResources.ContainsKey(resource.ResourceType))
-                    _storedResources[resource.ResourceType] += resource.Amount;
-                else
-                    _storedResources.Add(resource.ResourceType, resource.Amount);
-                
-                ResourceAddedEvent?.Invoke(resource);
-            }
-        }
-
-        public IResource RemoveResource(ResourceType resourceType, int amount)
-        {
-            if (_storedResources.ContainsKey(resourceType) && _storedResources[resourceType] >= amount)
-            {
-                _storedResources[resourceType] -= amount;
-                var resource = new Resource(resourceType, amount);
-                ResourceRemovedEvent?.Invoke(resource);
-                return resource;
-            }
-            return null;
-        }
-
-        private int CurrentCapacity => _storedResources.Sum(x => x.Value);
     }
 }

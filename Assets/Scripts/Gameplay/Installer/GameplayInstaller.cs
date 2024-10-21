@@ -38,9 +38,11 @@ public class GameplayInstaller : MonoInstaller
         Container.BindFactory<ResourceItemView, ResourceItemView.Factory>()
             .FromComponentInNewPrefab(_gameplayResources.ResourcePrefab)
             .WhenInjectedInto<ResourceItem>();
+
+        Container.BindInterfacesTo<ResourceSpawner>().AsSingle();
         
         Container.BindMemoryPool<ResourceItem, ResourceItem.Pool>()
-            .WithInitialSize(5);
+            .WithInitialSize(100);
         
         Container.BindFactory<InfoBoardView, InfoBoardView.Factory>()
             .FromComponentInNewPrefab(_gameplayResources.InfoBoardPrefab)

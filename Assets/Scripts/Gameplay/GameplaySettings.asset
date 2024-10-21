@@ -20,18 +20,17 @@ MonoBehaviour:
     InfoBoardPrefab: {fileID: 8176120136437365882, guid: 47a872bd5cb6a42339971c6c41852640, type: 3}
   _characterSettings:
     MovementSettings:
-      Speed: 4
-      Deceleration: 6
+      Speed: 40
+      Deceleration: 30
     RotationSettings:
-      Speed: 4
+      Speed: 30
   _manufactureSettings:
-    ProductionRequirement:
-      InputResources: []
-      OutputResource:
-        _resourceType: 0
-        _amount: 1
-      ProductionTime: 5
+    Input: []
+    Output:
+    - ResourceType: 0
+      Amount: 1
+    ProductionTime: 2
     Warehouse:
       InputCapacity: 0
-      OutputCapacity: 10
-  _resourceSettings: {fileID: 0}
+      OutputCapacity: 20
+  _resourceSettings: {fileID: 11400000, guid: 26599e52b62a5457c99804212d0c01da, type: 2}

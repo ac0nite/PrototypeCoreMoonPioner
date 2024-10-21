@@ -15,7 +15,7 @@ namespace Gameplay.Warehouses
         private readonly string _inputWarehouseTemplate = "Input warehouse:{0}";
         private readonly string _outputWarehouseTemplate = "Output warehouse:{0}";
         private readonly string _manufactureStatusTemplate = "Manufacture status:{0}";
-        private readonly string[] _manufactureStatus = {"busy", "waiting"};
+        private readonly string[] _manufactureStatus = {"waiting", "busy"};
         
         public void UpdateInfoBoard(int inputWarehouse, int outputWarehouse, bool statusManufacture)
         {
@@ -38,6 +38,7 @@ namespace Gameplay.Warehouses
         private readonly InfoBoardView _view;
         private IManufactureWarehouse _warehouse;
         private bool _statusManufacture;
+        private IManufacture _manufacture;
 
         public InfoBoard(
             Transform parent, 
@@ -47,39 +48,48 @@ namespace Gameplay.Warehouses
             _view.transform.SetParent(parent, false);
         }
 
-        public void Initialize(IManufactureWarehouse warehouse)
+        public void Initialize(IManufacture manufacture, IManufactureWarehouse warehouse)
         {
+            _manufacture = manufacture;
             _warehouse = warehouse;
             
             UpdateInfoBoard();
             
-            _warehouse.Input.ResourceAddedEvent += ChangeResources;
-            _warehouse.Input.ResourceRemovedEvent += InputResourceRemovedHandler;
-            
-            _warehouse.Output.ResourceAddedEvent += OutputResourceAddedHandler;
-            _warehouse.Output.ResourceRemovedEvent += ChangeResources;
+            // _manufacture.ProgressChangedEvent += ManufactureOnProgressChangedHandler;
+            //
+            // _warehouse.Input.ResourceAddedEvent += ChangeResources;
+            // _warehouse.Input.ResourceRemovedEvent += InputResourceRemovedHandler;
+            //
+            // _warehouse.Output.ResourceAddedEvent += OutputResourceAddedHandler;
+            // _warehouse.Output.ResourceRemovedEvent += ChangeResources;
         }
-        
+
         public void Dispose()
         {
-            _warehouse.Input.ResourceAddedEvent -= ChangeResources;
-            _warehouse.Input.ResourceRemovedEvent -= InputResourceRemovedHandler;
+            _manufacture.ProgressChangedEvent -= ManufactureOnProgressChangedHandler;
             
-            _warehouse.Output.ResourceAddedEvent -= OutputResourceAddedHandler;
-            _warehouse.Output.ResourceRemovedEvent -= ChangeResources;
+            // _warehouse.Input.ResourceAddedEvent -= ChangeResources;
+            // _warehouse.Input.ResourceRemovedEvent -= InputResourceRemovedHandler;
+            //
+            // _warehouse.Output.ResourceAddedEvent -= OutputResourceAddedHandler;
+            // _warehouse.Output.ResourceRemovedEvent -= ChangeResources;
 
             _statusManufacture = false;
+        }
+        
+        private void ManufactureOnProgressChangedHandler(bool status)
+        {
+            _statusManufacture = status;
+            UpdateInfoBoard();
         }
 
         private void OutputResourceAddedHandler(IResource _)
         {
-            _statusManufacture = false;
             UpdateInfoBoard();
         }
 
         private void InputResourceRemovedHandler(IResource _)
         {
-            _statusManufacture = true;
             UpdateInfoBoard();
         }
 
@@ -87,10 +97,10 @@ namespace Gameplay.Warehouses
 
         private void UpdateInfoBoard()
         {
-            _view.UpdateInfoBoard(
-                _warehouse.Input.StoredResources.Sum(x => x.Value),
-                _warehouse.Output.StoredResources.Sum(x => x.Value),
-                _statusManufacture);
+            // _view.UpdateInfoBoard(
+            //     _warehouse.Input.StoredResources.Sum(x => x.Value.Amount),
+            //     _warehouse.Output.StoredResources.Sum(x => x.Value.Amount),
+            //     _statusManufacture);
             
             //_storedResources.Sum(x => x.Value)
         }
