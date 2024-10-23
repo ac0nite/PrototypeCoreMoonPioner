@@ -4,6 +4,7 @@ namespace Gameplay.Warehouses
     {
         Resource1,
         Resource2,
-        Resource3
+        Resource3,
+        Progress
     }
 }

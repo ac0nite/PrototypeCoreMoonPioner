@@ -1,10 +1,14 @@
 using Gameplay.Constants;
+using UnityEngine;
 
 namespace Gameplay.Warehouses
 {
     public interface IResourceSpawner
     {
         ResourceItem Spawn(ResourceType type);
+        
+        //TODO Color resourceColor вместо Color в послкдствии нужно возвратить настройки для анимации или при создании учесть
+        (ResourceItem item, Color targetColor) Spawn(ResourceType createType, ResourceType resourceType);
         void DeSpawn(params ResourceItem[] items);
     }
     public class ResourceSpawner : IResourceSpawner
@@ -23,6 +27,13 @@ namespace Gameplay.Warehouses
         public ResourceItem Spawn(ResourceType type)
         {
             return _resourceItemPool.Spawn(_settings.GetResourceSettings(type));
+        }
+
+        public (ResourceItem item, Color targetColor) Spawn(ResourceType createType, ResourceType resourceType)
+        {
+            return (
+                _resourceItemPool.Spawn(_settings.GetResourceSettings(createType)), 
+                _settings.GetResourceSettings(resourceType).Color);
         }
 
         public void DeSpawn(params ResourceItem[] items)

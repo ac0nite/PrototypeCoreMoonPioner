@@ -83,7 +83,7 @@ namespace Gameplay.Buildings
 
             _manufacture.ProgressChangedEvent += ProgressChangedHandler;
 
-            _manufacture.Run();
+            _manufacture.RunAsync().Forget();
         }
 
         private void ProgressChangedHandler(bool status)

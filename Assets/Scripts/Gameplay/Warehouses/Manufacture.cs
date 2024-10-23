@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Common;
 using Cysharp.Threading.Tasks;
-using Gameplay.Buildings;
-using UnityEngine;
 
 namespace Gameplay.Warehouses
 {
@@ -53,7 +51,7 @@ namespace Gameplay.Warehouses
 
     public interface IManufacture
     {
-        void Run();
+        UniTask RunAsync();
         void Stop();
         void Dispose();
         public event Action<bool> ProgressChangedEvent; 
@@ -80,12 +78,12 @@ namespace Gameplay.Warehouses
             // _warehouse.Input.ResourceAddedEvent += ResourceAddedHandler;
         }
 
-        public void Run()
+        public async UniTask RunAsync()
         {
             if (_warehouse.CanResourceProduce(_settings.Input))
             {
-                UseForProduce();
-                Produce();
+                await UseForProduceAsync();
+                await ProduceAsync();
                 ProgressChangedEvent?.Invoke(true);
                 _timer.StartAsync(ReleaseAndTryToRunProduction).Forget();
             } 
@@ -96,37 +94,59 @@ namespace Gameplay.Warehouses
             _timer.Stop();
         }
 
-        private void ResourceAddedHandler(IResource _) => Run();
+        private void ResourceAddedHandler(IResource _) => RunAsync();
 
         private void ReleaseAndTryToRunProduction()
         {
-            Release();
+            ReleaseAsync().Forget();
             ProgressChangedEvent?.Invoke(false);
-            Run();
+            RunAsync();
         }
 
-        private void UseForProduce()
+        private async UniTask UseForProduceAsync()
         {
-            foreach (var resource in _settings.Input)
+            await UniTask.Yield();
+            for (int i = 0; i < _settings.Input.Length; i++)
             {
-                var input = _warehouse.Input.GetStorage(resource.ResourceType).RemoveResource(resource.Amount);
-               _resourceItemSpawner.DeSpawn(input.Collections.ToArray());
+                var settings = _settings.Input[i];
+                for (int j = 0; j < settings.Amount; j++)
+                {
+                    var input = _warehouse.Input.GetStorage(settings.ResourceType).RemoveResource(1);
+                    _resourceItemSpawner.DeSpawn(input.Collections.ToArray());
+                }
+            }
+            
+            // foreach (var resource in _settings.Input)
+            // {
+            //     var input = _warehouse.Input.GetStorage(resource.ResourceType).RemoveResource(resource.Amount);
+            //    _resourceItemSpawner.DeSpawn(input.Collections.ToArray());
+            // }
+        }
+
+        private async UniTask ProduceAsync()
+        {
+            await UniTask.Yield();
+            for (int i = 0; i < _settings.Output.Length; i++)
+            {
+                var settings = _settings.Output[i];
+                for (int j = 0; j < settings.Amount; j++)
+                {
+                    var param = _resourceItemSpawner.Spawn(ResourceType.Progress, settings.ResourceType);
+                    var storage = _warehouse.Progress.GetStorage(settings.ResourceType);
+                    storage.AddResource(new Resource(settings.ResourceType, param.item));
+                    param.item.Animation.PlayProgressTask(storage.GeеFreePointPlacement(), param.targetColor, _settings.ProductionTime).Forget();
+                }
             }
         }
 
-        private void Produce()
+        private async UniTask ReleaseAsync()
         {
-            var item = _resourceItemSpawner.Spawn(_outputResourceType);
-            _warehouse.Progress.GetStorage(_outputResourceType).AddResource(new Resource(_outputResourceType, new []{item}));
-            var point = _warehouse.Progress.GetStorage(_outputResourceType).GeеFreePointPlacement();
-            item.Animation.PlayJumpTask(point).Forget();
-        }
-
-        private void Release()
-        {
-            TransferResources
-                .TransferTo(_warehouse.Progress, _outputResourceType, 1, _warehouse.Output)
-                .Forget();
+            await UniTask.Yield();
+            for (int i = 0; i < _settings.Output.Length; i++)
+            {
+                var settings = _settings.Output[i];
+                TransferResources.TransferTo(_warehouse.Progress, settings.ResourceType, 1, _warehouse.Output).Forget();
+            }
         }
         
         public void Dispose()

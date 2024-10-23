@@ -149,7 +149,7 @@ namespace Gameplay.Constants
         {
             DOTween.Sequence()
                 .Append(CreateMovementTween(from, to, duration * _settings.MoveRatio))
-                .Append(CreateManufacturingSequence(toColor, duration * (1f - _settings.MoveRatio)))
+                .Append(CreateProgressManufacturingSequence(toColor, duration * (1f - _settings.MoveRatio)))
                 .OnComplete(() => callback?.Invoke());
         }
         
@@ -158,7 +158,7 @@ namespace Gameplay.Constants
             _view.transform.position = to.position;
             _view.transform.rotation = to.rotation;
             
-            CreateManufacturingSequence(toColor, duration).OnComplete(() => callback?.Invoke());
+            CreateProgressManufacturingSequence(toColor, duration).OnComplete(() => callback?.Invoke());
         }
 
         public UniTask PlayMoveTask(Placement.Point target)
@@ -175,6 +175,16 @@ namespace Gameplay.Constants
             return DOTween.Sequence()
                 .Append(_transform.DOJump(target.Position, _settings.JumpPower, _settings.NumJumps,_settings.MoveDuration))
                 .Join(_transform.DORotateQuaternion(target.Parent.rotation, _settings.MoveDuration))
+                .AsyncWaitForCompletion()
+                .AsUniTask();
+        }
+        
+        public UniTask PlayProgressTask(Placement.Point point, Color toColor, float duration)
+        {
+            _transform.position = point.Position;
+            _transform.rotation = point.Parent.rotation;
+            
+            return CreateProgressManufacturingSequence(toColor, duration)
                 .AsyncWaitForCompletion()
                 .AsUniTask();
         }
@@ -215,10 +225,10 @@ namespace Gameplay.Constants
         
         private Tween CreateShakeScaleTween(float duration)
         {
-            return _transform.DOShakeScale(duration);
+            return _transform.DOShakeScale(duration, 0.05f, 10, 90);
         }
 
-        private Sequence CreateManufacturingSequence(Color toColor, float duration)
+        private Sequence CreateProgressManufacturingSequence(Color toColor, float duration)
         {
             return DOTween.Sequence()
                 .Append(CreateColorTween(toColor, duration))
