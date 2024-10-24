@@ -19,10 +19,12 @@ public class GameplayInstaller : MonoInstaller
             .BindFactory<CharacterView, CharacterView.Factory>()
             .FromComponentInNewPrefab(_gameplayResources.CharacterPrefab)
             .WhenInjectedInto<Character>();
-
+        
         Container
             .BindMemoryPool<Character, Character.Pool>()
             .WithInitialSize(1);
+        
+        // Container.BindInterfacesTo<Character>().FromResolve();
 
         Container.Bind<LoadLocations>().ToSelf().AsSingle();
         

@@ -129,6 +129,15 @@ namespace Gameplay.Constants
         }
 
         #endregion
+
+        public void SetPoint(Placement.Point point, bool isParent)
+        {
+            Debug.Log($"SetPoint: {point.Parent.name} -> {point.Position}");
+            if (isParent) _view.transform.SetParent(point.Parent, true);
+            
+            _view.transform.position = point.Position;
+            _view.transform.rotation = point.Parent.rotation;
+        }
     }
     
 

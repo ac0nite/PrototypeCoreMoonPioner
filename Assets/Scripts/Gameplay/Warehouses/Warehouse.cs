@@ -15,8 +15,8 @@ namespace Gameplay.Warehouses
     }
     public class Warehouse : IWarehouse
     {
-        private readonly Dictionary<ResourceType,IStorage> _stored;
-        private readonly int _capacity;
+        protected readonly Dictionary<ResourceType,IStorage> _stored;
+        protected readonly int _capacity;
 
         public Warehouse([CanBeNull] IEnumerable<IStorage> storages)
         {
@@ -27,20 +27,19 @@ namespace Gameplay.Warehouses
         }
 
         public bool IsFull => _capacity == _stored.Sum(s => s.Value.Resource.Amount);
-        
         public bool IsEmpty => _stored.All(s => s.Value.Resource.Amount == 0);
         public bool IsUnUsed => _capacity == 0;
 
-        public bool Contains(ResourceType type, int quantity) => 
+        public virtual bool Contains(ResourceType type, int quantity) => 
             GetStorage(type)?.Resource.Amount >= quantity;
 
-        public int GetFreeSpaceAmount(ResourceType resourceType)
+        public virtual int GetFreeSpaceAmount(ResourceType resourceType)
         {
             var storage = GetStorage(resourceType);
             return storage?.Capacity - storage?.Resource.Amount ?? 0;
         }
 
-        public IStorage GetStorage(ResourceType resourceType)
+        public virtual IStorage GetStorage(ResourceType resourceType)
         {
             return _stored.GetValueOrDefault(resourceType);
         }

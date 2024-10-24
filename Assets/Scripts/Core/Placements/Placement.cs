@@ -14,7 +14,6 @@ namespace Core.PlacementsStorage
     public class Placement : IPlacement
     {
         private readonly Transform _basePoint;
-        private readonly ICollection _collection;
         
         private readonly float _layerSize;
         private readonly Vector3 _sideDirectionVector;
@@ -33,12 +32,13 @@ namespace Core.PlacementsStorage
         private readonly Size _viewSize;
         
         private Vector3 _stageOffset = Vector3.zero;
+        private readonly Func<int> _itemsLength;
 
-        public Placement([NotNull] PointConfig config, Size size, [NotNull] ICollection collection, int storage = 1)
+        public Placement([NotNull] PointConfig config, Size size, Func<int> itemsLengthFunc, int storage = 1)
         {
             _basePoint = config.BasePoint;
             _viewSize = size;
-            _collection = collection;
+            _itemsLength = itemsLengthFunc;
 
             var template = config.Template;
             _sideDirectionVector = template.GetSideDirectionVector();
@@ -64,7 +64,7 @@ namespace Core.PlacementsStorage
         }
         public Point GetNextPoint()
         {
-            var total = CalculateStageAmount(_collection.Count);
+            var total = CalculateStageAmount(_itemsLength.Invoke());
 
             var (row, col) = CalculateRowAndCol(total);
 
@@ -186,7 +186,7 @@ namespace Core.PlacementsStorage
                 for (int i = 1; i <= _storage; i++)
                 {
                     var collection = new Stack<int>();
-                    var placement = new Placement(this, ViewSize, collection, i);
+                    var placement = new Placement(this, ViewSize, () => collection.Count, i);
                     var points = Enumerable.Range(0, _amount).Select(_ =>
                     {
                         collection.Push(0);
@@ -217,12 +217,7 @@ namespace Core.PlacementsStorage
 
             public Vector3 ToVector3() => new Vector3(Width, Height, Depth);
             public static implicit operator Vector3(Size size) => size.ToVector3();
-            public static implicit operator Size(Vector3 vector) => new Size
-            {
-                Width = vector.x,
-                Height = vector.y,
-                Depth = vector.z
-            };
+            public static implicit operator Size(Vector3 vector) => new Size() {Width = vector.x, Height = vector.y, Depth = vector.z};
         }
 
         #endregion

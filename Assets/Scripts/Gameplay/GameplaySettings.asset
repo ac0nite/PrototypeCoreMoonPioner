@@ -29,8 +29,6 @@ MonoBehaviour:
     Output:
     - ResourceType: 0
       Amount: 1
-    - ResourceType: 1
-      Amount: 1
     ProductionTime: 2
     Warehouse:
       InputCapacity: 0

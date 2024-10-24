@@ -222,7 +222,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4509ddd28b454a50be795b998ce2558e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  placementConfigs: []
+  placementConfigs:
+  - BasePoint: {fileID: 1401650920}
+    Settings: {fileID: 11400000, guid: 01ba7d030de324f1fa4ebeb6d2dbe7bc, type: 2}
+    Template: {fileID: 11400000, guid: cd16c76d65c61467a9dfedba48fb0cb9, type: 2}
+    IsDebug: 1
+    ViewSize:
+      Width: 1
+      Height: 1
+      Depth: 1
+    _amount: 39
+    _storage: 2
 --- !u!1 &392933899
 GameObject:
   m_ObjectHideFlags: 0

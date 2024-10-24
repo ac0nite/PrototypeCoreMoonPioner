@@ -49,7 +49,7 @@ namespace Gameplay.Buildings
                 var capacity = manufactureSettings.Warehouse.InputCapacity;
                 Placement.Size size = _locationModel.ResourceItemSize;
                 var placement = new Placement(_view.InputStorageWarehouseConfig, size,
-                    resource.Collections as ICollection, index + 1);
+                    () => resource.Amount, index + 1);
 
                 return new Storage(resource, capacity, placement);
             }).ToArray();
@@ -60,7 +60,7 @@ namespace Gameplay.Buildings
                 var capacity = manufactureSettings.Warehouse.OutputCapacity;
                 Placement.Size size = _locationModel.ResourceItemSize;
                 var placement = new Placement(_view.OutputWarehousePointConfig, size,
-                    resource.Collections as ICollection, index + 1);
+                    () => resource.Amount, index + 1);
 
                 return new Storage(resource, capacity, placement);
             }).ToArray();
@@ -70,8 +70,8 @@ namespace Gameplay.Buildings
                 var resource = new Resource(s.ResourceType);
                 var capacity = s.Amount;
                 Placement.Size size = _locationModel.ResourceItemSize;
-                var placement = new Placement(_view.ManufacturePointConfig, size, resource.Collections as ICollection,
-                    index + 1);
+                var placement = new Placement(_view.ManufacturePointConfig, size, 
+                    () => resource.Amount, index + 1);
 
                 return new Storage(resource, capacity, placement);
             }).ToArray();
@@ -83,7 +83,7 @@ namespace Gameplay.Buildings
 
             _manufacture.ProgressChangedEvent += ProgressChangedHandler;
 
-            _manufacture.RunAsync().Forget();
+            //_manufacture.RunAsync().Forget();
         }
 
         private void ProgressChangedHandler(bool status)
