@@ -1,8 +1,8 @@
 using System;
 using Core.PlacementsStorage;
+using Gameplay.Areas;
 using Gameplay.Locations;
 using UnityEngine;
-using UnityEngine.Serialization;
 using Zenject;
 
 namespace Gameplay.Buildings
@@ -11,17 +11,26 @@ namespace Gameplay.Buildings
     {
         public BuildType Type;
         
-        [FormerlySerializedAs("_inputWarehousePointConfig")] [SerializeField] private Placement.PointConfig inputStorageWarehouseConfig;
+        [SerializeField] private Placement.PointConfig inputStorageWarehouseConfig;
         [SerializeField] private Placement.PointConfig _outputWarehousePointConfig;
         [SerializeField] private Placement.PointConfig _manufacturePointConfig;
         
         [SerializeField] private Canvas _canvas;
+        
+        private IAreaTrigger[] _areaTriggers;
 
         public Placement.PointConfig InputStorageWarehouseConfig => inputStorageWarehouseConfig;
         public Placement.PointConfig OutputWarehousePointConfig => _outputWarehousePointConfig;
         public Placement.PointConfig ManufacturePointConfig => _manufacturePointConfig;
         public Transform InfoBoardPoint => _canvas.transform;
-        
+
+        public IAreaTrigger[] AreaTriggers { get; private set; }
+
+        private void Awake()
+        {
+            AreaTriggers = GetComponentsInChildren<IAreaTrigger>() ?? throw new Exception("No area triggers found");
+        }
+
         public void SetRenderCamera(Camera camera)
         {
             _canvas.worldCamera = camera;

@@ -27,6 +27,6 @@ MonoBehaviour:
       Color: {r: 0.7699359, g: 0.770079, b: 0.7735849, a: 1}
   _animationSettings:
     MoveRatio: 1
-    MoveDuration: 0.5
+    MoveDuration: 0.3
     JumpPower: 2
     NumJumps: 1

@@ -29,6 +29,7 @@ namespace Gameplay.Warehouses
         
         public bool CanResourceProduce(Manufacture.ResourceSettings[] requirement)
         {
+            //TODO если размер склада не кратный входным параметрам производства, то склад не заполнится
             return (IsUnusedInput() || CanInputResources(requirement)) && !IsFullOutput();
         }
 
@@ -85,7 +86,7 @@ namespace Gameplay.Warehouses
                 await UseForProduceAsync();
                 await ProduceAsync();
                 ProgressChangedEvent?.Invoke(true);
-                _timer.StartAsync(ReleaseAndTryToRunProduction).Forget();
+                _timer.StartAsync(() => ReleaseAndTryToRunProduction()).Forget();
             } 
         }
 
@@ -96,11 +97,11 @@ namespace Gameplay.Warehouses
 
         private void ResourceAddedHandler(IResource _) => RunAsync();
 
-        private void ReleaseAndTryToRunProduction()
+        private async UniTask ReleaseAndTryToRunProduction()
         {
-            ReleaseAsync().Forget();
+            await ReleaseAsync();
             ProgressChangedEvent?.Invoke(false);
-            RunAsync();
+            RunAsync().Forget();
         }
 
         private async UniTask UseForProduceAsync()
@@ -115,12 +116,6 @@ namespace Gameplay.Warehouses
                     _resourceItemSpawner.DeSpawn(input.Collections.ToArray());
                 }
             }
-            
-            // foreach (var resource in _settings.Input)
-            // {
-            //     var input = _warehouse.Input.GetStorage(resource.ResourceType).RemoveResource(resource.Amount);
-            //    _resourceItemSpawner.DeSpawn(input.Collections.ToArray());
-            // }
         }
 
         private async UniTask ProduceAsync()
@@ -129,23 +124,25 @@ namespace Gameplay.Warehouses
             for (int i = 0; i < _settings.Output.Length; i++)
             {
                 var settings = _settings.Output[i];
+                var storage = _warehouse.Progress.GetStorage(settings.ResourceType);
                 for (int j = 0; j < settings.Amount; j++)
                 {
                     var param = _resourceItemSpawner.Spawn(ResourceType.Progress, settings.ResourceType);
-                    var storage = _warehouse.Progress.GetStorage(settings.ResourceType);
                     storage.AddResource(new Resource(settings.ResourceType, param.item));
-                    param.item.Animation.PlayProgressTask(storage.GeеFreePointPlacement(), param.targetColor, _settings.ProductionTime).Forget();
+                    param.item.Animation
+                        .PlayProgressTask(storage.Placement.GetFreePoint(), param.targetColor, _settings.ProductionTime)
+                        .Forget();
                 }
             }
         }
 
         private async UniTask ReleaseAsync()
         {
-            await UniTask.Yield();
+            UniTask task = default;
             for (int i = 0; i < _settings.Output.Length; i++)
             {
-                var settings = _settings.Output[i];
-                TransferResources.TransferTo(_warehouse.Progress, settings.ResourceType, 1, _warehouse.Output).Forget();
+                var param = _settings.Output[i];
+                await TransferResources.TransferTo(_warehouse.Progress, param.ResourceType, param.Amount, _warehouse.Output); 
             }
         }
         

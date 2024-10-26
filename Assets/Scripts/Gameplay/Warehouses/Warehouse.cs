@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using JetBrains.Annotations;
+using UnityEngine;
 
 namespace Gameplay.Warehouses
 {
@@ -26,7 +27,7 @@ namespace Gameplay.Warehouses
             _capacity = storages?.Sum(s => s.Capacity) ?? 0;
         }
 
-        public bool IsFull => _capacity == _stored.Sum(s => s.Value.Resource.Amount);
+        public bool IsFull => _stored.Sum(s => s.Value.Resource.Amount) >= _capacity;
         public bool IsEmpty => _stored.All(s => s.Value.Resource.Amount == 0);
         public bool IsUnUsed => _capacity == 0;
 

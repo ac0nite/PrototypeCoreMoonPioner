@@ -9,12 +9,14 @@ namespace Gameplay.Warehouses
         {
             var sourceStorage = source.GetStorage(type);
             var targetStorage = target.GetStorage(type);
-            
+
+            var currentAmount = targetStorage.Resource.Amount;
             for (int i = 0; i < quantity; i++)
             {
                 var item = sourceStorage.RemoveResource(1);
-                targetStorage.AddResource(item);
-                await item.Collections.First().Animation.PlayJumpTask(targetStorage.GeеFreePointPlacement());
+                await item.Collections.First().Animation
+                    .PlayJumpTask(targetStorage.Placement.GetNextPoint(currentAmount + i + 1))
+                    .ContinueWith(() => targetStorage.AddResource(item));
             }
         }
     }

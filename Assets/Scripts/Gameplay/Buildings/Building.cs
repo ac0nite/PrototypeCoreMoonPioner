@@ -1,9 +1,11 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using Common;
 using Core.PlacementsStorage;
 using Cysharp.Threading.Tasks;
+using Gameplay.Areas;
 using Gameplay.Locations;
 using Gameplay.Warehouses;
 using UnityEngine;
@@ -20,13 +22,15 @@ namespace Gameplay.Buildings
         private IManufacture _manufacture;
         private IManufactureWarehouse _warehouse;
         private readonly ILocationModelGetter _locationModel;
+        private readonly IAreaTriggerHandler _triggerHandler;
 
         public Building(
             BuildingView.Factory viewFactory,
             InfoBoard.Factory infoBoardFactory,
             [Inject (Id = Constants.Constants.ID.GeneralCamera)] Camera generalCamera,
             IResourceSpawner resourceItemSpawner,
-            ILocationModelGetter locationModel
+            ILocationModelGetter locationModel,
+            IAreaTriggerHandler triggerHandler
             )
         {
             _resourceItemSpawner = resourceItemSpawner;
@@ -34,6 +38,7 @@ namespace Gameplay.Buildings
             _view.SetRenderCamera(generalCamera);
             _infoBoard = infoBoardFactory.Create(_view.InfoBoardPoint);
             _locationModel = locationModel;
+            _triggerHandler = triggerHandler;
         }
 
         private void Initialise(Settings buildSettings, Manufacture.Settings manufactureSettings)
@@ -80,26 +85,23 @@ namespace Gameplay.Buildings
             _manufacture = new Manufacture(manufactureSettings, _warehouse, _resourceItemSpawner);
 
             _infoBoard.Initialize(_manufacture, _warehouse);
-
-            _manufacture.ProgressChangedEvent += ProgressChangedHandler;
+            
+            foreach (var areaTrigger in _view.AreaTriggers)
+            {
+                _triggerHandler.AddTrigger(areaTrigger, 
+                    (areaTrigger.TriggerType.HasFlagFast(AreaTrigger.Type.INPUT) ? _warehouse.Input : null,
+                    areaTrigger.TriggerType.HasFlagFast(AreaTrigger.Type.OUTPUT) ? _warehouse.Output : null));   
+            }
 
             //_manufacture.RunAsync().Forget();
-        }
-
-        private void ProgressChangedHandler(bool status)
-        {
-            if (!status) return;
-
-            if (_warehouse.IsUnusedInput())
-            {
-                //var item = _resourcePool.Spawn();
-            }
         }
 
         public void Dispose()
         {
             _infoBoard.Dispose();
             _manufacture.Dispose();
+            
+            _triggerHandler.RemoveTriggers(_view.AreaTriggers);
         }
         
         private void Enabled(bool enabled)

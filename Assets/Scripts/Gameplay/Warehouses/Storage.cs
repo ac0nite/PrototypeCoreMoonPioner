@@ -7,7 +7,7 @@ namespace Gameplay.Warehouses
     {
         IResource Resource { get; }
         int Capacity { get; }
-        Placement.Point GeеFreePointPlacement();
+        IPlacement Placement { get; }
         void AddResource(IResource resource);
         IResource RemoveResource(int quantity);
     }
@@ -19,14 +19,14 @@ namespace Gameplay.Warehouses
         public Storage(IResource resource, int capacity, IPlacement placement)
         {
             _resource = resource;
-            _placement = placement;
+            
+            Placement = placement;
             Capacity = capacity;
         }
         
         public IResource Resource => _resource;
         public int Capacity { get; }
-
-        public Placement.Point GeеFreePointPlacement() => _placement.GetNextPoint();
+        public IPlacement Placement { get; }
         public void AddResource(IResource resource)
         {
             if(_resource.ResourceType != resource.ResourceType) 

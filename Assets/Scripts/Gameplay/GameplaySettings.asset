@@ -29,8 +29,8 @@ MonoBehaviour:
     Output:
     - ResourceType: 0
       Amount: 1
-    ProductionTime: 2
+    ProductionTime: 1
     Warehouse:
-      InputCapacity: 0
-      OutputCapacity: 10
+      InputCapacity: 20
+      OutputCapacity: 20
   _resourceSettings: {fileID: 11400000, guid: 26599e52b62a5457c99804212d0c01da, type: 2}

@@ -9,7 +9,8 @@ namespace Core.PlacementsStorage
 {
     public interface IPlacement
     {
-        Placement.Point GetNextPoint();
+        Placement.Point GetFreePoint();
+        Placement.Point GetNextPoint(int amount = 0);
     }
     public class Placement : IPlacement
     {
@@ -62,9 +63,18 @@ namespace Core.PlacementsStorage
 
             _storageOffset = CalculateStorageOffset(storage, settings, template);
         }
-        public Point GetNextPoint()
+
+        public Point GetFreePoint()
         {
-            var total = CalculateStageAmount(_itemsLength.Invoke());
+            return CalculatePoint(_itemsLength.Invoke());
+        }
+        public Point GetNextPoint(int amount = default)
+        {
+            return CalculatePoint(Mathf.Max(1, amount));
+        }
+        private Point CalculatePoint(int amount)
+        {
+            var total = CalculateStageAmount(amount);
 
             var (row, col) = CalculateRowAndCol(total);
 
@@ -73,7 +83,7 @@ namespace Core.PlacementsStorage
             var forward = _forwardDirectionVector * (_forwardOffset * row);
 
             var position = CalculatePosition(up, right, forward);
-
+            
             return new Point()
             {
                 Parent = _basePoint,
@@ -81,7 +91,7 @@ namespace Core.PlacementsStorage
                 LocalPosition = _basePoint.InverseTransformPoint(position)
             };
         }
-        
+
         private Vector3 CalculatePosition(Vector3 up, Vector3 right, Vector3 forward)
         {
             return _basePoint.position + 

@@ -3,10 +3,12 @@ using System.Collections;
 using System.Linq;
 using Core.Input;
 using Core.Movement;
+using Gameplay.Areas;
 using Gameplay.Locations;
 using Gameplay.Warehouses;
 using UnityEngine;
 using Zenject;
+using IInitializable = Zenject.IInitializable;
 using Random = UnityEngine.Random;
 
 namespace Gameplay.Characters
@@ -17,6 +19,7 @@ namespace Gameplay.Characters
         private readonly IInputHandler _inputHandler;
         private readonly ILocationModelGetter _locationModel;
         private readonly IResourceSpawner _resourceItemSpawner;
+        private readonly IAreaTriggerHandler _triggerHandler;
         private readonly CharacterView _view;
         private Inventory _inventory;
 
@@ -25,12 +28,14 @@ namespace Gameplay.Characters
             IInputHandler inputHandler,
             CharacterView.Factory viewFactory,
             ILocationModelGetter locationModel,
-            IResourceSpawner resourceItemSpawner)
+            IResourceSpawner resourceItemSpawner,
+            IAreaTriggerHandler triggerHandler)
         {
             _settings = settings;
             _inputHandler = inputHandler;
             _locationModel = locationModel;
             _resourceItemSpawner = resourceItemSpawner;
+            _triggerHandler = triggerHandler;
             _view = viewFactory.Create();
         }
         
@@ -44,7 +49,7 @@ namespace Gameplay.Characters
                     var type = (ResourceType)Random.Range(0, types.Length);
                     var item = _resourceItemSpawner.Spawn(type);
                     _inventory.AddResource(new Resource(type, item));
-                    item.SetPoint(_inventory.GeеFreePointPlacement(), true);
+                    item.SetPoint(_inventory.Placement.GetFreePoint(), true);
                 }
                 else if (Input.GetKeyDown(KeyCode.S))
                 {
@@ -64,10 +69,17 @@ namespace Gameplay.Characters
         {
             _view.Movement = new ObjectMovement(_view.transform, _settings.MovementSettings, () => _inputHandler.Direction, _locationModel.ClampMovement);
             _view.Rotation = new ObjectRotation(_view.transform, _settings.RotationSettings, () => _inputHandler.Direction);
-            
             _inventory = new Inventory(20, _view.InventoryPlacementPointConfig, _locationModel.ResourceItemSize);
+            
+            _view.OnTriggerEnterEvent += TransferResourcesDebug;
         }
-        
+
+        private void TransferResourcesDebug(Collider target)
+        {
+            var warehouse = _triggerHandler.GetWarehouses(target.GetComponent<IAreaTrigger>());
+            Debug.Log($"Trigger! input:{warehouse.input != null} -> output:{warehouse.output != null}");
+        }
+
         public void Dispose()
         {
             _view.Movement = null;

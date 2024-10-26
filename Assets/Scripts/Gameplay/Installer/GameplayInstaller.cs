@@ -1,4 +1,5 @@
 using Core;
+using Gameplay.Areas;
 using Gameplay.Buildings;
 using Gameplay.Characters;
 using Gameplay.Constants;
@@ -52,5 +53,7 @@ public class GameplayInstaller : MonoInstaller
 
         Container.BindFactory<Transform, InfoBoard, InfoBoard.Factory>()
             .WhenInjectedInto<Building>();
+
+        Container.BindInterfacesTo<AreaTriggerHandler>().AsSingle();
     }
 }
