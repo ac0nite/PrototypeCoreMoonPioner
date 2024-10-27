@@ -19,7 +19,7 @@ namespace Gameplay.Characters
 
         private void OnTriggerEnter(Collider other)
         {
-            Debug.Log($"OnTriggerEnter: {other.gameObject.name}");
+            // Debug.Log($"OnTriggerEnter: {other.gameObject.name}");
             OnTriggerEnterEvent?.Invoke(other);
         }
         
@@ -31,7 +31,7 @@ namespace Gameplay.Characters
 
         private void OnTriggerExit(Collider other)
         {
-            Debug.Log($"OnTriggerExit: {other.gameObject.name}");
+            // Debug.Log($"OnTriggerExit: {other.gameObject.name}");
             OnTriggerExitEvent?.Invoke(other);
         }
 

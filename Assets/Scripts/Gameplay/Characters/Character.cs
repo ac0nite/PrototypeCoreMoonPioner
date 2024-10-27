@@ -22,6 +22,7 @@ namespace Gameplay.Characters
         private readonly IAreaTriggerHandler _triggerHandler;
         private readonly CharacterView _view;
         private Inventory _inventory;
+        private ITimedAreaTrigger _timedAreaTriggerEvent;
 
         public Character(
             Settings settings,
@@ -70,8 +71,9 @@ namespace Gameplay.Characters
             _view.Movement = new ObjectMovement(_view.transform, _settings.MovementSettings, () => _inputHandler.Direction, _locationModel.ClampMovement);
             _view.Rotation = new ObjectRotation(_view.transform, _settings.RotationSettings, () => _inputHandler.Direction);
             _inventory = new Inventory(20, _view.InventoryPlacementPointConfig, _locationModel.ResourceItemSize);
-            
-            _view.OnTriggerEnterEvent += TransferResourcesDebug;
+
+            _timedAreaTriggerEvent = new TimedAreaTriggerEvent(_view);
+            _timedAreaTriggerEvent.OnEventAreaTrigger += TransferResourcesDebug;
         }
 
         private void TransferResourcesDebug(Collider target)
@@ -84,6 +86,9 @@ namespace Gameplay.Characters
         {
             _view.Movement = null;
             _view.Rotation = null;
+            
+            _timedAreaTriggerEvent.OnEventAreaTrigger -= TransferResourcesDebug;
+            _timedAreaTriggerEvent.Dispose();
         }
         
         private void SetPoint(LocationSettings.Point point)
